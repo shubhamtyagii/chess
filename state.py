@@ -1,11 +1,12 @@
 import chess
 import numpy as np
-    
+from train import Net
+
 
 class State(object):
     def __init__(self,board=None):
         if board is None:
-            self.board=chess.Board
+            self.board=chess.Board()
         else:
             self.board=board
         
@@ -13,7 +14,7 @@ class State(object):
         assert self.board.is_valid()
         
                 
-        state=np.zeros((8,8,5))
+        state=np.zeros((5,8,8))
         
         bstate=np.zeros((64),dtype=np.uint8)
         for i in range(64):
@@ -39,14 +40,14 @@ class State(object):
         bstate=bstate.reshape((8,8))
         
         #0-3 cols for binary
-        state[:,:,0]=(bstate>>3)&1
-        state[:,:,1]=(bstate>>2)&1
-        state[:,:,2]=(bstate>>1)&1
-        state[:,:,3]=(bstate>>0)&1
+        state[0]=(bstate>>3)&1
+        state[1]=(bstate>>2)&1
+        state[2]=(bstate>>1)&1
+        state[3]=(bstate>>0)&1
         
      
         #4th col is for whose turn it is
-        state[:,:,4]=self.board.turn*1.0
+        state[4]=self.board.turn*1.0
         
         
         return state
@@ -55,4 +56,9 @@ class State(object):
         #TODO add neural network here
         return 1
     def edges(self):
-        return list(self.state.legal_moves)
+        return list(self.board.legal_moves)
+		
+		
+if __name__=="__main__":
+	model=torch.load('/nets/value.pth')
+	
