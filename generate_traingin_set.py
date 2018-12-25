@@ -6,8 +6,8 @@ def get_dataset(data_size=None):
     gn=0
     X=[]
     Y=[]
-    for fn in os.listdir('data'):
-        pgn=open(os.path.join('data',fn))
+    for fn in os.listdir('./../data'):
+        pgn=open(os.path.join('./../data',fn))
 
         while 1:
 
@@ -27,7 +27,12 @@ def get_dataset(data_size=None):
                 Y.append(value)
             print('parsing game no : ',gn,' got examples', len(X))
             if data_size is not None and len(X)>data_size:
+                X=np.array(X)
+                Y=np.array(Y)
                 return X,Y
+    X = np.array(X)
+    Y = np.array(Y)
     return X,Y
 if __name__=='__main__':
-    get_dataset(1000)
+    X,Y=get_dataset(1e6)
+    np.savez('./processed/dataset.npz',X,Y)
