@@ -6,7 +6,7 @@ from torch import optim
 import torch.nn.functional as F
 class ChessValueDataset(Dataset):
     def __init__(self):
-        data=np.load('./processed/dataset_100K.npz')
+        data=np.load('./processed/dataset_1M.npz')
         self.X=data['arr_0']
         self.Y=data['arr_1']
         print('loaded data shapes= ',self.X.shape,self.Y.shape)
@@ -99,4 +99,4 @@ if __name__=="__main__":
 				print('batch= ',batch_idx,' loss= ',loss.item())
 		print('--------------------------------------')
 		print('EPOCH= ',epoch,' loss= ',all_loss/num)
-		torch.save(model.state_dict(),'nets/value.pth')
+		torch.save(model.state_dict(),'nets/value_1M.pth')
