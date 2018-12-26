@@ -79,7 +79,7 @@ if __name__=="__main__":
 	model.train()
 	device='cpu'
 	floss=nn.MSELoss()
-	for epoch in range(10):
+	for epoch in range(20):
 		all_loss=0
 		num=0
 		for batch_idx,(data,target) in enumerate(train_loader):
