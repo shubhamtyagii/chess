@@ -19,7 +19,53 @@ class Valuator(object):
 		output=self.model(torch.tensor(brd).float())
 		return float(output.data[0][0])
 		
+class DeepEvaluator(object):
+	def __init__(self,depth=3):
+		self.depth=depth
 		
+		
+	
+	def __call__(self,board_state,v):
+		moves_scores=[]
+		for move in board_state.board.legal_moves:
+			board_state.board.push(move)
+			res=v(board_state)
+			res+=self.minimax(board_state,False,1,v)
+			moves_scores.append([move,res])
+			board_state.board.pop()
+		moves_scores=sorted(moves_scores,key=lambda x:x[1],reverse=board_state.board.turn)
+		print(moves_scores)
+		return moves_scores[0][0]
+			
+			
+			
+	def minimax(self, board_state,maximize,depth,v):
+		if(depth==self.depth or board_state.board.is_game_over()):
+			val=v(board_state)
+			#print(val)
+			return val
+		print(board_state.board)
+		if maximize:
+			value=-200000
+			for move in board_state.board.legal_moves:
+				
+				board_state.board.push(move)
+				temp=v(board_state)
+				value=max(value,temp+self.minimax(board_state,False,depth+1,v))
+				board_state.board.pop()
+				#print(board_state.board)
+				#exit(0)
+				return value
+		else:
+			value=200000
+			for move in board_state.board.legal_moves:
+				board_state.board.push(move)
+				temp=v(board_state)
+				value=min(value,temp+self.minimax(board_state,True,depth+1,v))
+				board_state.board.pop()	
+				return value
+		
+	
 def explore_leaves(s,v):
 	ret=[]
 	for e in s.edges():
@@ -32,9 +78,12 @@ s=State()
 v=Valuator()
 
 def computer_move(s,v):
-	move=sorted(explore_leaves(s,v),key=lambda x:x[0],reverse=s.board.turn)[0]
+	deep=DeepEvaluator()
+	#move=sorted(explore_leaves(s,v),key=lambda x:x[0],reverse=s.board.turn)[0]
 	#print(move)
-	s.board.push(move[1])
+	move=deep(s,v)
+	#s.board.push(move[1])
+	s.board.push(move)
 	
 
 
