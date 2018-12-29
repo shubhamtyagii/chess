@@ -250,7 +250,7 @@ if __name__=="__main__":
 			computer_move(s,v)
 			print(s.board)
 	else: 
-		app.run(debug=True)
+		app.run(host='0.0.0.0',debug=True)
 
 	
 	
