@@ -1,6 +1,6 @@
 data/
 processed/
-nets/
+other_nets/
 __pycache__/
 *.idea/
 *.ipynb_checkpoints/

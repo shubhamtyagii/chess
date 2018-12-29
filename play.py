@@ -6,8 +6,12 @@ import chess
 import chess.svg
 import traceback
 import base64
+import os
 from flask import Flask,Response,request
 
+
+
+MAXVAL=10000
 class Valuator(object):
 	def __init__(self):
 		self.model=Net()
@@ -18,72 +22,130 @@ class Valuator(object):
 		brd=s.serialize()[None]
 		output=self.model(torch.tensor(brd).float())
 		return float(output.data[0][0])
+
 		
-class DeepEvaluator(object):
-	def __init__(self,depth=3):
-		self.depth=depth
-		
-		
+def computer_minimax(s,v,depth,a,b,big=False):
+	if( depth>=5 or s.board.is_game_over()):
+		return v(s)
+	turn=s.board.turn
+	if turn==chess.WHITE:
+		ret=-MAXVAL
+	else:
+		ret=MAXVAL
+	if big:
+		bret=[]
+	isort=[]
+	for e in s.board.legal_moves:
+		s.board.push(e)
+		isort.append((v(s),e))
+		s.board.pop()
+	move=sorted(isort,key=lambda x:x[0],reverse=s.board.turn)
+	# beam search beyond depth 3
+	if depth>=2:
+		move=move[:5]
+	for e in [x[1] for x in move]:
+		s.board.push(e)
+		tval=computer_minimax(s,v,depth+1,a,b)
+		if big:
+			bret.append((tval,e))
+		s.board.pop()
+		if(turn==chess.WHITE):
 	
-	def __call__(self,board_state,v):
-		moves_scores=[]
-		for move in board_state.board.legal_moves:
-			board_state.board.push(move)
-			res=v(board_state)
-			res+=self.minimax(board_state,False,1,v)
-			moves_scores.append([move,res])
-			board_state.board.pop()
-		moves_scores=sorted(moves_scores,key=lambda x:x[1],reverse=board_state.board.turn)
-		print(moves_scores)
-		return moves_scores[0][0]
+			ret= max(ret,tval)
+			a=max(a,ret)
+			if a>=b:
+				break
 			
-			
-			
-	def minimax(self, board_state,maximize,depth,v):
-		if(depth==self.depth or board_state.board.is_game_over()):
-			val=v(board_state)
-			#print(val)
-			return val
-		print(board_state.board)
-		if maximize:
-			value=-200000
-			for move in board_state.board.legal_moves:
-				
-				board_state.board.push(move)
-				temp=v(board_state)
-				value=max(value,temp+self.minimax(board_state,False,depth+1,v))
-				board_state.board.pop()
-				#print(board_state.board)
-				#exit(0)
-				return value
 		else:
-			value=200000
-			for move in board_state.board.legal_moves:
-				board_state.board.push(move)
-				temp=v(board_state)
-				value=min(value,temp+self.minimax(board_state,True,depth+1,v))
-				board_state.board.pop()	
-				return value
+			ret=min(ret,tval)
+			b=min(ret,b)
+			if a>=b:
+				break
+	
+		
+	if big:
+		return ret,bret
+	else:
+		return ret
+class DeepValuator(object):
+	
+	values={chess.PAWN:1,
+			chess.KNIGHT:3,
+			chess.BISHOP:3,
+			chess.ROOK:5,
+			chess.QUEEN:9,
+			chess.KING:0}
+	def __init__(self):
+		self.reset()
+		self.memo={}
+	
+	def reset(self):
+		self.count=0
+		
+	#simple value func based on pieces
+	#ideas: https://en.wikipedia.org/wiki/Evaluation_functions
+	
+	def __call__(self,s):
+		key=s.key()	
+		self.count+=1
+		
+		if key not in self.memo:
+			
+			self.memo[key]=self.value(s)
+		return self.memo[key]
+			
+	def value(self,s):
+		b=s.board
+		if b.is_game_over():
+			if b.result()=='1-0':
+				return MAXVAL
+			elif b.result()=='0-1':
+				return -MAXVAL
+			else:
+				return 0
+				
+		val=0.0
+		piece_map=b.piece_map()
+		for i in piece_map:
+			temp_val=self.values[piece_map[i].piece_type]
+			if piece_map[i].color==chess.WHITE:
+				val+=temp_val
+			else:
+				val-=temp_val
+		#add a number of legal moves term
+		bak=b.turn
+		b.turn=chess.WHITE
+		val+=0.1*b.legal_moves.count()
+		b.turn=chess.BLACK
+		val-=0.1*b.legal_moves.count()
+		
+		b.turn=bak
+		
+		return val
 		
 	
 def explore_leaves(s,v):
 	ret=[]
-	for e in s.edges():
-		s.board.push(e)
-		ret.append((v(s),e))
-		s.board.pop()
+	v.reset()
+	cval,ret=computer_minimax(s,v,depth=0,a=-MAXVAL,b=MAXVAL,big=True)
+	print('explored nodes=',v.count)
 	return ret
 #board and engine
 s=State()
-v=Valuator()
+v=DeepValuator()
 
 def computer_move(s,v):
-	deep=DeepEvaluator()
-	#move=sorted(explore_leaves(s,v),key=lambda x:x[0],reverse=s.board.turn)[0]
+	#deep=DeepEvaluator()
+	move=sorted(explore_leaves(s,v),key=lambda x:x[0],reverse=s.board.turn)
+	if len(move)==0:
+		return 
 	#print(move)
-	move=deep(s,v)
+	#move=deep(s,v)
 	#s.board.push(move[1])
-	s.board.push(move)
+	for i in range(min(3,len(move))):
+		print(move[i])
+	s.board.push(move[0][1])
+	
 	
 
 
@@ -180,7 +242,15 @@ def move_coordinates():
   return response
 	
 if __name__=="__main__":
-	app.run(debug=True)
+	SELFPLAY=False
+	if SELFPLAY:
+		s=State()
+		while not s.board.is_game_over():
+			
+			computer_move(s,v)
+			print(s.board)
+	else: 
+		app.run(debug=True)
 
 	
 	
