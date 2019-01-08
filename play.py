@@ -41,7 +41,7 @@ def computer_minimax(s,v,depth,a,b,big=False):
 		s.board.pop()
 	move=sorted(isort,key=lambda x:x[0],reverse=s.board.turn)
 	# beam search beyond depth 3
-	if depth>=2:
+	if depth>=3:
 		move=move[:5]
 	for e in [x[1] for x in move]:
 		s.board.push(e)
@@ -250,7 +250,8 @@ if __name__=="__main__":
 			computer_move(s,v)
 			print(s.board)
 	else: 
-		app.run(host='0.0.0.0',port=8888)
+		#app.run(host='0.0.0.0',port=8888)
+		app.run(debug=True)
 
 	
 	
