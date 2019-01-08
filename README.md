@@ -49,4 +49,4 @@ I have given weights to each category of pieces. Hence after simulating each pos
    http://localhost:5000/
 
 ## Output:
-![Output Image not found](https://github.com/shubhamtyagii/chess/README_images/output.jpg)
+![Output Image not found](/README_images/output.jpg?raw=true "Output")
